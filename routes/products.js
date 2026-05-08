@@ -40,6 +40,29 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
     }
 })
 
+router.get('/:id', [tokenMiddleware], async function (req, res, next) {
+    try {
+        let { id } = req.params;
+
+        let product = await ProductSchema.findById(id);
+
+        if (!product) return res.status(404).send({ error: 'Product not found' });
+
+        res.status(200).send({
+            status: '200',
+            message: 'Get product successful',
+            data: { product },
+        })
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({
+            status: '500',
+            message: error.message
+        })
+    }
+})
+
 router.post('/', upload.single('image'), [tokenMiddleware], async function (req, res, next) {
     try {
 
@@ -71,12 +94,14 @@ router.post('/', upload.single('image'), [tokenMiddleware], async function (req,
 router.put('/:id', [tokenMiddleware], async function (req, res, next) {
     try {
         let { id } = req.params;
+        let { name, price, description, image, stock } = req.body;
 
         let product = await ProductSchema.findByIdAndUpdate(id, ({
-            name: req.body.name,
-            price: req.body.price,
-            description: req.body.description,
-            image: req.body.image,
+            name: name,
+            price: price,
+            description: description,
+            image: image,
+            stock: stock,
         }), { new: true });
 
         if (!product) return res.status(404).send({ error: 'Product not found' });

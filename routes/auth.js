@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 var express = require('express');
 var router = express.Router();
 var AuthSchema = require('../models/auth.models')
-// var TokenSchema = require('../models/token.models')
 
 router.post('/register', async function (req, res, next) {
     try {

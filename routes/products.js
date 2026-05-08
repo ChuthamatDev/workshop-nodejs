@@ -5,6 +5,8 @@ const multer = require('multer');
 var exprss = require('express');
 var router = exprss.Router();
 var ProductSchema = require('../models/products.models')
+var OrderSchema = require('../models/orders.models')
+var AuthSchema = require('../models/auth.models')
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -63,6 +65,55 @@ router.get('/:id', [tokenMiddleware], async function (req, res, next) {
     }
 })
 
+router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
+    try {
+        let { id } = req.params;
+
+        let product = await ProductSchema.findById(id);
+
+        if (!product) return res.status(404).send({ error: 'Product not found' });
+
+        let orders = await OrderSchema.find({ 'products.product': id })
+            .populate({
+                path: 'user',
+                model: 'auth',
+                select: 'username status'
+            })
+            .populate({
+                path: 'products.product',
+                model: 'product',
+                select: 'name price'
+            });
+
+        const cleanOrders = orders.map(order => {
+            return {
+                orderId: order._id,
+                customer: order.user.username,
+                quantity: order.products[0].quantity,
+                totalPrice: order.total_price,
+                paymentStatus: order.payment_status,
+                orderDate: order.createdAt
+            }
+        });
+
+        res.status(200).send({
+            status: '200',
+            message: 'Get product orders successful',
+            data: {
+                product: product,
+                orders: cleanOrders
+            }
+        })
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({
+            status: '500',
+            message: error.message
+        })
+    }
+})
+
 router.post('/', upload.single('image'), [tokenMiddleware], async function (req, res, next) {
     try {
 
@@ -91,6 +142,62 @@ router.post('/', upload.single('image'), [tokenMiddleware], async function (req,
     }
 })
 
+router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
+    try {
+        let { userId } = req.user;
+        let { id } = req.params;
+        let { quantity } = req.body;
+
+        if (!quantity || quantity <= 0) {
+            return res.status(400).send({
+                error: 'Quantity must be greater than 0'
+            });
+        }
+
+        let product = await ProductSchema.findById(id);
+        if (!product) return res.status(404).send({
+            error: 'Product not found'
+        });
+
+        if (quantity > product.stock) {
+            return res.status(400).send({ error: 'Not enough stock' });
+        }
+
+        let price = product.price;
+        let total = price * quantity;
+
+        product.stock -= quantity;
+        await product.save();
+
+        let newOrder = new OrderSchema({
+            user: userId,
+            products: [
+                {
+                    product: id,
+                    quantity: quantity,
+                    price: price,
+                }
+            ],
+            total_price: total,
+        });
+
+        await newOrder.save();
+
+        res.status(200).send({
+            status: '200',
+            message: 'Create order successful',
+            data: newOrder,
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({
+            status: '500',
+            message: error.message
+        })
+    }
+})
+
 router.put('/:id', [tokenMiddleware], async function (req, res, next) {
     try {
         let { id } = req.params;
@@ -104,7 +211,9 @@ router.put('/:id', [tokenMiddleware], async function (req, res, next) {
             stock: stock,
         }), { new: true });
 
-        if (!product) return res.status(404).send({ error: 'Product not found' });
+        if (!product) return res.status(404).send({
+            error: 'Product not found'
+        });
 
         res.status(200).send({
             status: '200',
@@ -142,5 +251,6 @@ router.delete('/:id', [tokenMiddleware], async function (req, res, next) {
         })
     }
 })
+
 
 module.exports = router;

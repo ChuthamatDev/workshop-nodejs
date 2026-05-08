@@ -6,7 +6,6 @@ var router = express.Router();
 var AuthSchema = require('../models/auth.models')
 // var TokenSchema = require('../models/token.models')
 
-/* POST register */
 router.post('/register', async function (req, res, next) {
     try {
         let { username, password } = req.body;
@@ -48,14 +47,11 @@ router.post('/register', async function (req, res, next) {
     }
 });
 
-// POST login 
 router.post('/login', async function (req, res, next) {
     const { username, password } = req.body;
 
-    //check 
     if (!username || !password) return res.status(400).send({ error: 'Username and Password are required' });
 
-    //check if user exists
     let user = await AuthSchema.findOne({ username: req.body.username });
 
     if (!user) return res.status(400).send({ error: `${username} does not exist,Please register first` });
@@ -67,7 +63,7 @@ router.post('/login', async function (req, res, next) {
     if (user.status === 'injected') return res.status(400).send({ error: 'Your account is injected' });
 
     try {
-        let token = await jwt.sign({ userId: user._id }, 'workshop_inet_nodejs_korat', { expiresIn: '1h' });
+        let token = await jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.status(200).send({
             status: '200',
@@ -84,7 +80,7 @@ router.post('/login', async function (req, res, next) {
             status: '500',
             message: 'Internal Server Error'
         })
-        cosole.log(error);
+        console.log(error);
     }
 })
 

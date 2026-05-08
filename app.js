@@ -1,4 +1,4 @@
-const verifyToken = require('./middleware/verifyToken');
+const verifyToken = require('./middleware/token.middleware.js');
 
 var createError = require('http-errors');
 var express = require('express');

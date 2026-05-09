@@ -9,9 +9,7 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
     try {
         let orders = await OrderSchema.find({});
 
-        let token = req.headers.authorization
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log(decoded);
+        console.log(req.auth);
 
         res.status(200).send({
             status: '200',

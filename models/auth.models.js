@@ -4,7 +4,11 @@ const { Schema } = mongoose;
 const AuthSchema = new Schema({
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    status: { type: String, enum: ['pending', 'approved', 'injected'], default: 'pending' }
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    }
 }, {
     timestamps: true
 });

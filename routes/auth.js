@@ -22,8 +22,6 @@ router.post('/register', async function (req, res, next) {
             password: await bcrypt.hash(password, 10),
         })
 
-        console.log(user);
-
         await user.save();
 
         res.status(200).send({
@@ -42,7 +40,6 @@ router.post('/register', async function (req, res, next) {
             status: '500',
             message: error.message
         })
-
     }
 });
 
@@ -59,7 +56,7 @@ router.post('/login', async function (req, res, next) {
     if (!validPassword) return res.status(400).send({ error: 'Invalid username or password' });
 
     if (user.status === 'pending') return res.status(400).send({ error: 'Your account is pending approval' });
-    if (user.status === 'injected') return res.status(400).send({ error: 'Your account is injected' });
+    if (user.status === 'rejected') return res.status(400).send({ error: 'Your account is rejected' });
 
     try {
         let token = await jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });

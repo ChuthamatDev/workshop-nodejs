@@ -1,40 +1,40 @@
-const verifyToken = require('./middleware/token.middleware.js');
-
-var createError = require('http-errors');
-var express = require('express');
-var cors = require('cors');
-
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var authRouter = require('./routes/auth');
-var productsRouter = require('./routes/products');
-var ordersRouter = require('./routes/orders');
 
 require('dotenv').config();
 require('./db.js')
 
-process.env.DB_HOST
+const verifyToken = require('./middleware/token.middleware.js');
 
-var app = express();
+const createError = require('http-errors');
+const express = require('express');
+const cors = require('cors');
+
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+const authRouter = require('./routes/auth');
+const productsRouter = require('./routes/products');
+const ordersRouter = require('./routes/orders');
+
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors());
 
 app.use('/', indexRouter);
 app.use('/api/v1/', authRouter);
 app.use('/api/v1/users', usersRouter);
+
 app.use('/api/v1/products', verifyToken, require('./routes/products'));
 app.use('/api/v1/orders', verifyToken, require('./routes/orders'));
 

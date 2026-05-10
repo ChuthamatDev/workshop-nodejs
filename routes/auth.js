@@ -1,31 +1,39 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-var express = require('express');
-var router = express.Router();
-var AuthSchema = require('../models/auth.models')
+const express = require('express');
+const router = express.Router();
+const AuthSchema = require('../models/auth.models')
 
 router.post('/register', async function (req, res, next) {
     try {
-        let { username, password } = req.body;
+        const { username, password } = req.body;
 
-        if (username === '' || password === '') return res.status(400).send({ error: 'Username or password are required' });
+        if (username === '' || password === '') return res.status(400).json({
+            status: '400',
+            message: 'Username or password are required'
+        });
 
-        let existingUser = await AuthSchema.findOne({ username: req.body.username });
+        if (password.length < 8) return res.status(400).json({
+            status: '400',
+            message: 'Password must be at least 8 characters'
+        });
 
-        if (existingUser) return res.status(400).send({ error: 'Username already exists' });
+        const existingUser = await AuthSchema.findOne({ username: req.body.username });
+        if (existingUser) return res.status(400).json({
+            status: '400',
+            message: 'Username already exists'
+        });
 
-        if (password.length < 8) return res.status(400).send({ error: 'Password must be at least 8 characters' });
-
-        let user = new AuthSchema({
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new AuthSchema({
             username: username,
-            password: await bcrypt.hash(password, 10),
+            password: hashedPassword,
         })
 
         await user.save();
 
-        res.status(200).send({
-            status: '200',
+        res.status(201).json({
+            status: '201',
             message: 'Register successful',
             data: {
                 _id: user._id,
@@ -36,7 +44,7 @@ router.post('/register', async function (req, res, next) {
 
     } catch (error) {
         console.log(error);
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: error.message
         })
@@ -46,29 +54,37 @@ router.post('/register', async function (req, res, next) {
 router.post('/login', async function (req, res, next) {
     const { username, password } = req.body;
 
-    if (!username || !password) return res.status(400).send({
+    if (!username || !password) return res.status(400).json({
         status: '400',
-        error: 'Username and Password are required'
+        message: 'Username and password are required'
     });
 
-    let user = await AuthSchema.findOne({ username: req.body.username });
-
-    if (!user) return res.status(400).send({ status: '400', error: `${username} does not exist,Please register first` });
+    const user = await AuthSchema.findOne({ username: req.body.username });
+    if (!user) return res.status(400).json({
+        status: '400',
+        message: 'Invalid username or password'
+    });
 
     const validPassword = await bcrypt.compare(req.body.password, user.password);
-    if (!validPassword) return res.status(400).send({ status: '400', error: 'Invalid username or password' });
+    if (!validPassword) return res.status(400).json({
+        status: '400',
+        message: 'Invalid username or password'
+    });
 
-    if (user.status === 'pending') return res.status(400).send({ status: '400', error: 'Your account is pending approval' });
-    if (user.status === 'rejected') return res.status(400).send({ status: '400', error: 'Your account is rejected' });
+    if (user.status !== 'approved') {
+        return res.status(403).json({
+            status: '403',
+            message: `Account is ${user.status}`,
+        })
+    };
 
     try {
-        console.log(user.username)
-        let token = await jwt.sign({
+        const token = await jwt.sign({
             userId: user._id,
             username: user.username
         }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.status(200).send({
+        res.status(200).json({
             status: '200',
             message: 'Login successful',
             data: {
@@ -79,7 +95,7 @@ router.post('/login', async function (req, res, next) {
         })
 
     } catch (error) {
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: 'Internal Server Error'
         })

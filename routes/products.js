@@ -1,14 +1,12 @@
-const jwt = require('jsonwebtoken');
+const exprss = require('express');
+const router = exprss.Router();
 const mongoose = require('mongoose');
-
-const tokenMiddleware = require('../middleware/token.middleware')
 const multer = require('multer');
 
-var exprss = require('express');
-var router = exprss.Router();
-var ProductSchema = require('../models/products.models')
-var OrderSchema = require('../models/orders.models')
-var AuthSchema = require('../models/auth.models')
+const ProductSchema = require('../models/products.models')
+const OrderSchema = require('../models/orders.models')
+
+const tokenMiddleware = require('../middleware/token.middleware')
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -18,14 +16,13 @@ const storage = multer.diskStorage({
         cb(null, new Date().getTime() + '-' + file.originalname)
     }
 })
-
 const upload = multer({ storage: storage })
 
 router.get('/', [tokenMiddleware], async function (req, res, next) {
     try {
-        let products = await ProductSchema.find({});
+        const products = await ProductSchema.find({});
 
-        res.status(200).send({
+        res.status(200).json({
             status: '200',
             message: 'Get products successful',
             data: products,
@@ -33,7 +30,7 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
 
     } catch (error) {
         console.log(error);
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: error.message
         })
@@ -42,17 +39,16 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
 
 router.get('/:id', [tokenMiddleware], async function (req, res, next) {
     try {
-        let { id } = req.params;
+        const { id } = req.params;
 
-        let product = await ProductSchema.findById(id);
+        const product = await ProductSchema.findById(id);
 
-        if (!product) return res.status(404).send({
+        if (!product) return res.status(404).json({
             status: '404',
             message: 'Product not found',
-            data: null
         });
 
-        res.status(200).send({
+        res.status(200).json({
             status: '200',
             message: 'Get product successful',
             data: { product },
@@ -70,62 +66,57 @@ router.get('/:id', [tokenMiddleware], async function (req, res, next) {
 //แสดง Order ทั้งหมดของ Product
 router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
     try {
-        let { id } = req.params;
+        const productId = req.params.id;
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
             return res.status(400).send({
                 status: '400',
-                message: 'Product not found',
-                data: null
+                message: 'Invalid Product ID',
             });
         }
 
-        let product = await ProductSchema.findById(id);
-
-        if (!product) return res.status(404).send({
-            status: '404',
+        const product = await ProductSchema.findById(productId);
+        if (!product) return res.status(400).send({
+            status: '400',
             message: 'Product not found',
-            data: null
         });
 
-        let orders = await OrderSchema.find({ 'products.product': id })
-            .populate({
-                path: 'user',
-                model: 'auth',
-                select: 'username status'
-            })
-            .populate({
-                path: 'products.product',
-                model: 'product',
-                select: 'name price'
-            });
+        const orders = await OrderSchema.find({ 'products.product': productId })
+            .populate('user', 'username status')
+            .populate('products.product', 'name price');
 
-        const cleanOrders = orders.map(order => {
+        let totalQuantitySold = 0;
+        let totalRevenue = 0;
 
-            const targetProduct = order.products.find((item) => item.product._id.toString() === id);
+        const result = [];
+        for (let order of orders) {
+            let myItem = order.products.find(p => p.product._id.toString() === productId);
 
-            return {
+            let quantity = myItem ? myItem.quantity : 0;
+            totalQuantitySold += quantity;
+            totalRevenue += (quantity * product.price);
+
+            result.push({
                 orderId: order._id,
-                customer: order.user ? order.user.username : 'Unknown User',
-                quantity: targetProduct ? targetProduct.quantity : 0,
+                customer: order.user ? order.user.username : "Unknown User",
+                quantity: myItem ? myItem.quantity : 0,
                 totalPrice: order.total_price,
-                paymentStatus: order.payment_status,
                 orderDate: order.createdAt
-            }
-        });
+            });
+        }
 
-        res.status(200).send({
+        res.status(200).json({
             status: '200',
             message: 'Get product orders successful',
             data: {
                 product: product,
-                orders: cleanOrders
+                orders: result
             },
         })
 
     } catch (error) {
         console.log(error);
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: error.message
         })
@@ -135,10 +126,10 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
 router.post('/', upload.single('image'), [tokenMiddleware], async function (req, res, next) {
     try {
 
-        let { name, price, description, image, stock } = req.body;
-        let imagePath = req.file ? req.file.path : null;
+        const { name, price, description, image, stock } = req.body;
+        const imagePath = req.file ? req.file.path : null;
 
-        let product = new ProductSchema({
+        const product = new ProductSchema({
             name: name,
             price: price,
             description: description,
@@ -148,15 +139,15 @@ router.post('/', upload.single('image'), [tokenMiddleware], async function (req,
 
         await product.save();
 
-        res.status(200).send({
-            status: '200',
+        res.status(201).json({
+            status: '201',
             message: 'Create product successful',
             data: product,
         })
 
     } catch (error) {
         console.log(error);
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: error.message
         })
@@ -171,33 +162,28 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
         const { quantity } = req.body;
 
         if (!quantity || quantity <= 0) {
-            return res.status(400).send({
+            return res.status(400).json({
                 status: '400',
                 message: 'Quantity must be greater than 0',
-                data: null
             });
         }
 
         const product = await ProductSchema.findById(productId);
         if (!product) {
-            return res.status(404).send({
+            return res.status(404).json({
                 status: '404',
                 message: 'Product not found',
-                data: null
             });
         }
 
         if (quantity > product.stock) {
-            return res.status(400).send({
+            return res.status(400).json({
                 status: '400',
                 message: 'Not enough stock',
-                data: null
             });
         }
 
-        const unitPrice = product.price;
-        const totalPrice = unitPrice * quantity;
-
+        const totalPrice = product.price * quantity;
         product.stock -= quantity;
 
         const newOrder = new OrderSchema({
@@ -205,7 +191,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
             products: [{
                 product: productId,
                 quantity: quantity,
-                price: unitPrice,
+                price: product.price,
             }],
             total_price: totalPrice,
         });
@@ -213,26 +199,25 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
         await product.save();
         await newOrder.save();
 
-        const cleanOrderResponse = {
+        const responseData = {
             orderId: newOrder._id,
             customer: username,
-            product: product.name,
+            productName: product.name,
             quantity: quantity,
             totalPrice: totalPrice,
-            paymentStatus: newOrder.payment_status,
             orderStatus: newOrder.status,
             orderDate: newOrder.createdAt
         };
 
-        return res.status(201).send({
+        return res.status(201).json({
             status: '201',
             message: 'Create order successful',
-            data: cleanOrderResponse
+            data: responseData
         });
 
     } catch (error) {
         console.error("Create Order Error:", error);
-        return res.status(500).send({
+        return res.status(500).json({
             status: '500',
             message: error.message || 'Internal Server Error',
             data: null
@@ -242,18 +227,18 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
 
 router.put('/:id', [tokenMiddleware], async function (req, res, next) {
     try {
-        let { id } = req.params;
-        let { name, price, description, image, stock } = req.body;
+        const { id } = req.params;
+        const { name, price, description, image, stock } = req.body;
 
-        let product = await ProductSchema.findByIdAndUpdate(id, req.body, { new: true });
+        const product = await ProductSchema.findByIdAndUpdate(id, req.body, { new: true });
 
-        if (!product) return res.status(404).send({
+        if (!product) return res.status(404).json({
             status: '404',
             message: 'Product not found',
             data: null
         });
 
-        res.status(201).send({
+        res.status(201).json({
             status: '201',
             message: 'Update product successful',
             data: product,
@@ -261,7 +246,7 @@ router.put('/:id', [tokenMiddleware], async function (req, res, next) {
 
     } catch (error) {
         console.log(error);
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: error.message
         })
@@ -270,17 +255,17 @@ router.put('/:id', [tokenMiddleware], async function (req, res, next) {
 
 router.delete('/:id', [tokenMiddleware], async function (req, res, next) {
     try {
-        let { id } = req.params;
+        const { id } = req.params;
 
-        let product = await ProductSchema.findByIdAndDelete(id);
+        const product = await ProductSchema.findByIdAndDelete(id);
 
-        if (!product) return res.status(404).send({
+        if (!product) return res.status(404).json({
             status: '404',
             message: 'Product not found',
             data: null
         });
 
-        res.status(200).send({
+        res.status(200).json({
             status: '200',
             message: 'Delete product successful',
             data: null
@@ -288,7 +273,7 @@ router.delete('/:id', [tokenMiddleware], async function (req, res, next) {
 
     } catch (error) {
         console.log(error);
-        res.status(500).send({
+        res.status(500).json({
             status: '500',
             message: error.message
         })

@@ -52,7 +52,8 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })

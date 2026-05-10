@@ -32,7 +32,8 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })
@@ -46,6 +47,7 @@ router.get('/:id', [tokenMiddleware], async function (req, res, next) {
         if (!product) return res.status(404).json({
             status: '404',
             message: 'Product not found',
+            data: null
         });
 
         res.status(200).json({
@@ -58,7 +60,8 @@ router.get('/:id', [tokenMiddleware], async function (req, res, next) {
         console.log(error);
         res.status(500).send({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })
@@ -72,6 +75,7 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
             return res.status(400).send({
                 status: '400',
                 message: 'Invalid Product ID',
+                data: null
             });
         }
 
@@ -79,6 +83,7 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
         if (!product) return res.status(400).send({
             status: '400',
             message: 'Product not found',
+            data: null
         });
 
         const orders = await OrderSchema.find({ 'products.product': productId })
@@ -118,7 +123,8 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })
@@ -149,7 +155,8 @@ router.post('/', upload.single('image'), [tokenMiddleware], async function (req,
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })
@@ -165,6 +172,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
             return res.status(400).json({
                 status: '400',
                 message: 'Quantity must be greater than 0',
+                data: null
             });
         }
 
@@ -173,6 +181,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
             return res.status(404).json({
                 status: '404',
                 message: 'Product not found',
+                data: null
             });
         }
 
@@ -180,6 +189,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
             return res.status(400).json({
                 status: '400',
                 message: 'Not enough stock',
+                data: null
             });
         }
 
@@ -248,7 +258,8 @@ router.put('/:id', [tokenMiddleware], async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })
@@ -275,7 +286,8 @@ router.delete('/:id', [tokenMiddleware], async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })

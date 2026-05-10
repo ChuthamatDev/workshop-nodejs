@@ -16,7 +16,8 @@ router.put('/:id/approve', async function (req, res, next) {
 
         if (!user) return res.status(404).json({
             status: '404',
-            message: 'User not found'
+            message: 'User not found',
+            data: null
         });
 
         res.status(200).json({
@@ -34,7 +35,8 @@ router.put('/:id/approve', async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 })

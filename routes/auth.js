@@ -10,18 +10,21 @@ router.post('/register', async function (req, res, next) {
 
         if (username === '' || password === '') return res.status(400).json({
             status: '400',
-            message: 'Username or password are required'
+            message: 'Username or password are required',
+            data: null
         });
 
         if (password.length < 8) return res.status(400).json({
             status: '400',
-            message: 'Password must be at least 8 characters'
+            message: 'Password must be at least 8 characters',
+            data: null
         });
 
         const existingUser = await AuthSchema.findOne({ username: req.body.username });
         if (existingUser) return res.status(400).json({
             status: '400',
-            message: 'Username already exists'
+            message: 'Username already exists',
+            data: null
         });
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -46,7 +49,8 @@ router.post('/register', async function (req, res, next) {
         console.log(error);
         res.status(500).json({
             status: '500',
-            message: error.message
+            message: error.message,
+            data: null
         })
     }
 });
@@ -56,25 +60,29 @@ router.post('/login', async function (req, res, next) {
 
     if (!username || !password) return res.status(400).json({
         status: '400',
-        message: 'Username and password are required'
+        message: 'Username and password are required',
+        data: null
     });
 
     const user = await AuthSchema.findOne({ username: req.body.username });
     if (!user) return res.status(400).json({
         status: '400',
-        message: 'Invalid username or password'
+        message: 'Invalid username or password',
+        data: null
     });
 
     const validPassword = await bcrypt.compare(req.body.password, user.password);
     if (!validPassword) return res.status(400).json({
         status: '400',
-        message: 'Invalid username or password'
+        message: 'Invalid username or password',
+        data: null
     });
 
     if (user.status !== 'approved') {
         return res.status(403).json({
             status: '403',
             message: `Account is ${user.status}`,
+            data: null
         })
     };
 
@@ -95,11 +103,13 @@ router.post('/login', async function (req, res, next) {
         })
 
     } catch (error) {
+        console.log(error);
         res.status(500).json({
             status: '500',
-            message: 'Internal Server Error'
+            message: 'Internal Server Error',
+            data: null
         })
-        console.log(error);
+
     }
 })
 

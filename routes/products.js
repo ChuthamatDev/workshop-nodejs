@@ -23,8 +23,6 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
     try {
         let products = await ProductSchema.find({});
 
-        console.log(req.auth);
-
         res.status(200).send({
             status: '200',
             message: 'Get products successful',
@@ -115,16 +113,19 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
 router.post('/', upload.single('image'), [tokenMiddleware], async function (req, res, next) {
     try {
 
-        let { name, price, description, image } = req.body;
+        let { name, price, description, image, stock } = req.body;
         let imagePath = req.file ? req.file.path : null;
+
         let product = new ProductSchema({
             name: name,
             price: price,
             description: description,
             image: imagePath,
+            stock: stock,
         })
 
         await product.save();
+
         res.status(200).send({
             status: '200',
             message: 'Create product successful',
@@ -142,6 +143,7 @@ router.post('/', upload.single('image'), [tokenMiddleware], async function (req,
 
 router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
     try {
+
         let { userId } = req.user;
         let { id } = req.params;
         let { quantity } = req.body;
@@ -201,13 +203,7 @@ router.put('/:id', [tokenMiddleware], async function (req, res, next) {
         let { id } = req.params;
         let { name, price, description, image, stock } = req.body;
 
-        let product = await ProductSchema.findByIdAndUpdate(id, ({
-            name: name,
-            price: price,
-            description: description,
-            image: image,
-            stock: stock,
-        }), { new: true });
+        let product = await ProductSchema.findByIdAndUpdate(id, req.body, { new: true });
 
         if (!product) return res.status(404).send({
             error: 'Product not found'
@@ -236,10 +232,10 @@ router.delete('/:id', [tokenMiddleware], async function (req, res, next) {
 
         if (!product) return res.status(404).send({ error: 'Product not found' });
 
-        res.status(204).send({
-            status: '204',
-            message: 'Delete product successful',
-        })
+        res.status(200).send({
+            status: '200',
+            message: 'Delete product successful'
+        });
 
     } catch (error) {
         console.log(error);

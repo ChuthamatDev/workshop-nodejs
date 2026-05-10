@@ -10,10 +10,9 @@ module.exports = (req, res, next) => {
         const token = authHeader.split('Bearer ')[1];
         if (!token) return res.status(401).send({ error: 'Token is required' });
 
-        console.log(process.env.JWT_SECRET);
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        req.auth = decoded;
+        req.user = decoded;
 
         return next();
 

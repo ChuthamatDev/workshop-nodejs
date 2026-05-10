@@ -11,7 +11,7 @@
 
 ## การติดตั้งและรันโปรเจกต์
 
-1. Clone โปรเจกต์ และติดตั้ง Dependencies:
+1. Clone project
    ```bash
    git clone https://github.com/ChuthamatDev/workshop-nodejs.git
    ```

@@ -1,20 +1,47 @@
-const jwt = require('jsonwebtoken');
+const express = require('express');
+const router = express.Router();
+
 const tokenMiddleware = require('../middleware/token.middleware')
+var OrderSchema = require('../models/orders.models');
+const ProductSchema = require('../models/products.models');
 
-var exprss = require('express');
-var router = exprss.Router();
-var OrderSchema = require('../models/orders.models')
-
+//แสดง Order ทุกรายการ
 router.get('/', [tokenMiddleware], async function (req, res, next) {
     try {
-        let orders = await OrderSchema.find({});
+        let { userId } = req.user;
+        let orders = await OrderSchema.find({ user: userId }).populate({
+            path: 'products.product',
+            model: 'product',
+            select: 'name price'
+        });
 
-        console.log(req.auth);
+        const summary = {
+            totalOrders: orders.length,
+            totalAmount: orders.reduce((sum, order) => sum + order.total_price, 0),
+            totalQuantity: orders.reduce((sum, order) => {
+                // รวมจำนวนชิ้นสินค้าจากทุกออเดอร์
+                const itemsCount = order.products.reduce((pSum, p) => pSum + p.quantity, 0);
+                return sum + itemsCount;
+            }, 0)
+        };
+
+        const formattedOrders = orders.map(order => ({
+            orderId: order._id,
+            totalPrice: order.total_price,
+            paymentStatus: order.payment_status,
+            orderStatus: order.status,
+            orderDate: order.createdAt,
+            products: order.products.map(item => ({
+                name: item.product ? item.product.name : 'Unknown Product',
+                quantity: item.quantity,
+                price: item.price
+            }))
+        }));
 
         res.status(200).send({
             status: '200',
             message: 'Get orders successful',
-            data: orders,
+            data: formattedOrders,
         })
 
     } catch (error) {

@@ -46,27 +46,34 @@ router.post('/register', async function (req, res, next) {
 router.post('/login', async function (req, res, next) {
     const { username, password } = req.body;
 
-    if (!username || !password) return res.status(400).send({ error: 'Username and Password are required' });
+    if (!username || !password) return res.status(400).send({
+        status: '400',
+        error: 'Username and Password are required'
+    });
 
     let user = await AuthSchema.findOne({ username: req.body.username });
 
-    if (!user) return res.status(400).send({ error: `${username} does not exist,Please register first` });
+    if (!user) return res.status(400).send({ status: '400', error: `${username} does not exist,Please register first` });
 
     const validPassword = await bcrypt.compare(req.body.password, user.password);
-    if (!validPassword) return res.status(400).send({ error: 'Invalid username or password' });
+    if (!validPassword) return res.status(400).send({ status: '400', error: 'Invalid username or password' });
 
-    if (user.status === 'pending') return res.status(400).send({ error: 'Your account is pending approval' });
-    if (user.status === 'rejected') return res.status(400).send({ error: 'Your account is rejected' });
+    if (user.status === 'pending') return res.status(400).send({ status: '400', error: 'Your account is pending approval' });
+    if (user.status === 'rejected') return res.status(400).send({ status: '400', error: 'Your account is rejected' });
 
     try {
-        let token = await jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        console.log(user.username)
+        let token = await jwt.sign({
+            userId: user._id,
+            username: user.username
+        }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.status(200).send({
             status: '200',
             message: 'Login successful',
             data: {
                 _id: user._id,
-                username: username,
+                username: user.username,
             },
             token: token,
         })

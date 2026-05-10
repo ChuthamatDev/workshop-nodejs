@@ -13,7 +13,10 @@ router.put('/:id/approve', async function (req, res, next) {
             status: 'approved'
         }, { new: true });
 
-        if (!user) return res.status(404).send({ error: 'User not found' });
+        if (!user) return res.status(404).send({
+            status: '404',
+            error: 'User not found'
+        });
 
         res.status(200).send({
             status: '200',

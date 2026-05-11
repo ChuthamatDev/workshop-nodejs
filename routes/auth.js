@@ -116,7 +116,7 @@ router.post('/login', async function (req, res, next) {
 
 router.post('/login-admin', async function (req, res, next) {
     try {
-        const { username, password } = req.body;
+        const { username, password, role } = req.body;
 
         if (!username || !password) return res.status(400).json({
             status: '400',

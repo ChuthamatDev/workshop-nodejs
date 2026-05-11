@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage: storage })
 
-router.get('/', [tokenMiddleware], async function (req, res, next) {
+router.get('/', [tokenMiddleware], async function (req, res) {
     try {
         const products = await ProductSchema.find({});
 
@@ -38,7 +38,7 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
     }
 })
 
-router.get('/:id', [tokenMiddleware], async function (req, res, next) {
+router.get('/:id', [tokenMiddleware], async function (req, res) {
     try {
         const { id } = req.params;
 
@@ -67,12 +67,12 @@ router.get('/:id', [tokenMiddleware], async function (req, res, next) {
 })
 
 //แสดง Order ทั้งหมดของ Product
-router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
+router.get('/:id/orders', [tokenMiddleware], async function (req, res) {
     try {
         const productId = req.params.id;
 
         if (!mongoose.Types.ObjectId.isValid(productId)) {
-            return res.status(400).send({
+            return res.status(400).json({
                 status: '400',
                 message: 'Invalid Product ID',
                 data: null
@@ -80,12 +80,13 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
         }
 
         const product = await ProductSchema.findById(productId);
-        if (!product) return res.status(400).send({
+        if (!product) return res.status(400).json({
             status: '400',
             message: 'Product not found',
             data: null
         });
 
+        //ค้นหาออเดอร์ที่มีสินค้านี้อยู่
         const orders = await OrderSchema.find({ 'products.product': productId })
             .populate('user', 'username status')
             .populate('products.product', 'name price');
@@ -93,31 +94,38 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
         let totalQuantitySold = 0;
         let totalRevenue = 0;
 
-        const result = [];
-        for (let order of orders) {
-            let myItem = order.products.find(p => p.product._id.toString() === productId);
+        const result = orders.map(order => {
+            // หาข้อมูลสินค้าตัวนี้ที่อยู่ในออเดอร์
+            const myItem = order.products.find(p => p.product._id.toString() === productId);
+            const quantity = myItem ? myItem.quantity : 0;
 
-            let quantity = myItem ? myItem.quantity : 0;
+            // บวกเยอะรวมและรายได้รวม
             totalQuantitySold += quantity;
             totalRevenue += (quantity * product.price);
 
-            result.push({
+            // จัดรูปแบบข้อมูลที่ต้องการส่งกลับ
+            return {
                 orderId: order._id,
-                customer: order.user ? order.user.username : "Unknown User",
-                quantity: myItem ? myItem.quantity : 0,
-                totalPrice: order.total_price,
+                customer: order.user?.username || 'Unknown User',
+                quantity: quantity,
+                totalPrice: order.total_price, // ราคาบิลรวม
                 orderDate: order.createdAt
-            });
-        }
+            };
+        });
 
         res.status(200).json({
             status: '200',
             message: 'Get product orders successful',
             data: {
+                summary: {
+                    totalOrders: orders.length,
+                    totalQuantitySold: totalQuantitySold,
+                    totalRevenue: totalRevenue
+                },
                 product: product,
                 orders: result
-            },
-        })
+            }
+        });
 
     } catch (error) {
         console.log(error);
@@ -129,7 +137,7 @@ router.get('/:id/orders', [tokenMiddleware], async function (req, res, next) {
     }
 })
 
-router.post('/', upload.single('image'), [tokenMiddleware], async function (req, res, next) {
+router.post('/', upload.single('image'), [tokenMiddleware], async function (req, res) {
     try {
 
         const { name, price, description, image, stock } = req.body;
@@ -162,7 +170,7 @@ router.post('/', upload.single('image'), [tokenMiddleware], async function (req,
 })
 
 // เพิ่ม Order ใน Product
-router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
+router.post('/:id/orders', [tokenMiddleware], async function (req, res) {
     try {
         const { userId, username } = req.user;
         const { id: productId } = req.params;
@@ -206,6 +214,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
             total_price: totalPrice,
         });
 
+        // บันทึกการเปลี่ยนแปลงของสินค้าและสร้างออเดอร์ใหม่
         await product.save();
         await newOrder.save();
 
@@ -235,7 +244,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res, next) {
     }
 });
 
-router.put('/:id', [tokenMiddleware], async function (req, res, next) {
+router.put('/:id', [tokenMiddleware], async function (req, res) {
     try {
         const { id } = req.params;
         const { name, price, description, image, stock } = req.body;
@@ -264,7 +273,7 @@ router.put('/:id', [tokenMiddleware], async function (req, res, next) {
     }
 })
 
-router.delete('/:id', [tokenMiddleware], async function (req, res, next) {
+router.delete('/:id', [tokenMiddleware], async function (req, res) {
     try {
         const { id } = req.params;
 

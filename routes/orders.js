@@ -16,17 +16,21 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
         let totalQuantity = 0;
 
         const formattedOrders = orders.map(order => {
-            totalAmount += order.total_price;
-
+            //ส่วนดึงข้อมูล
             const mainItem = order.products[0];
             const quantity = mainItem ? mainItem.quantity : 0;
+            const productName = mainItem?.product?.name || 'Unknown Product';
+            const unitPrice = mainItem ? mainItem.price : 0;
 
+            //คำนวณยอดรวม
+            totalAmount += order.total_price;
             totalQuantity += quantity;
 
+            //จัดรูปแบบส่งกลับ
             return {
                 orderId: order._id,
-                productName: mainItem?.product?.name || 'Unknown Product',
-                unitPrice: mainItem ? mainItem.price : 0,
+                productName: productName,
+                unitPrice: unitPrice,
                 quantity: quantity,
                 totalPrice: order.total_price,
                 paymentStatus: order.payment_status,

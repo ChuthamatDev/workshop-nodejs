@@ -56,37 +56,38 @@ router.post('/register', async function (req, res, next) {
 });
 
 router.post('/login', async function (req, res, next) {
-    const { username, password } = req.body;
-
-    if (!username || !password) return res.status(400).json({
-        status: '400',
-        message: 'Username and password are required',
-        data: null
-    });
-
-    const user = await AuthSchema.findOne({ username: req.body.username });
-    if (!user) return res.status(400).json({
-        status: '400',
-        message: 'Invalid username or password',
-        data: null
-    });
-
-    const validPassword = await bcrypt.compare(req.body.password, user.password);
-    if (!validPassword) return res.status(400).json({
-        status: '400',
-        message: 'Invalid username or password',
-        data: null
-    });
-
-    if (user.status !== 'approved') {
-        return res.status(403).json({
-            status: '403',
-            message: `Account is ${user.status}`,
-            data: null
-        })
-    };
-
     try {
+
+        const { username, password } = req.body;
+
+        if (!username || !password) return res.status(400).json({
+            status: '400',
+            message: 'Username and password are required',
+            data: null
+        });
+
+        const user = await AuthSchema.findOne({ username: req.body.username });
+        if (!user) return res.status(400).json({
+            status: '400',
+            message: 'Invalid username or password',
+            data: null
+        });
+
+        const validPassword = await bcrypt.compare(req.body.password, user.password);
+        if (!validPassword) return res.status(400).json({
+            status: '400',
+            message: 'Invalid username or password',
+            data: null
+        });
+
+        if (user.status !== 'approved') {
+            return res.status(403).json({
+                status: '403',
+                message: `Account is ${user.status}`,
+                data: null
+            })
+        };
+
         const token = await jwt.sign({
             userId: user._id,
             username: user.username
@@ -115,7 +116,7 @@ router.post('/login', async function (req, res, next) {
 
 router.post('/login-admin', async function (req, res, next) {
     try {
-        const { username, password, role } = req.body;
+        const { username, password } = req.body;
 
         if (!username || !password) return res.status(400).json({
             status: '400',

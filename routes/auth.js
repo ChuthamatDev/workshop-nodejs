@@ -113,4 +113,47 @@ router.post('/login', async function (req, res, next) {
     }
 })
 
+router.post('/login-admin', async function (req, res, next) {
+    try {
+        const { username, password, role } = req.body;
+
+        if (!username || !password) return res.status(400).json({
+            status: '400',
+            message: 'Username and password are required',
+            data: null
+        });
+
+        if (username !== process.env.ADMIN_USERNAME || password !== process.env.ADMIN_PASSWORD) {
+            return res.status(400).json({
+                status: '400',
+                message: 'Invalid username or password',
+                data: null
+            });
+        }
+
+        const token = await jwt.sign({
+            username: username,
+            role: 'admin'
+        }, process.env.JWT_SECRET_ADMIN, { expiresIn: '1h' });
+
+        res.status(200).json({
+            status: '200',
+            message: 'Admin login successful',
+            data: {
+                username: username,
+                role: role
+            },
+            token: token,
+        })
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: '500',
+            message: 'Internal Server Error',
+            data: null
+        })
+    }
+})
+
 module.exports = router;

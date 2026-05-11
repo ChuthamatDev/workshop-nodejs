@@ -3,6 +3,7 @@ require('dotenv').config();
 require('./db.js')
 
 const verifyToken = require('./middleware/token.middleware.js');
+const adminVerifyToken = require('./middleware/token.admin.middleware.js');
 
 const createError = require('http-errors');
 const express = require('express');
@@ -33,7 +34,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/api/v1/', authRouter);
-app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/users', adminVerifyToken, require('./routes/users'));
 
 app.use('/api/v1/products', verifyToken, require('./routes/products'));
 app.use('/api/v1/orders', verifyToken, require('./routes/orders'));

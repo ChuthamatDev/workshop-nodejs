@@ -1,11 +1,9 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
 const express = require('express');
 const router = express.Router();
+const adminMiddleware = require('../middleware/token.admin.middleware');
 const AuthSchema = require('../models/auth.models')
 
-router.put('/:id/approve', async function (req, res, next) {
+router.put('/:id/approve', [adminMiddleware], async function (req, res, next) {
     try {
         const { id } = req.params;
 

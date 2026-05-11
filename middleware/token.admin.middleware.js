@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
     try {
+
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
             return res.status(401).send({
@@ -16,7 +17,15 @@ module.exports = (req, res, next) => {
             message: 'Token is required'
         });
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_ADMIN);
+
+        if (decoded.role !== 'admin') {
+            return res.status(403).json({
+                status: '403',
+                message: 'Access Denied. Admin only.',
+                data: null
+            });
+        }
 
         req.user = decoded;
 

@@ -227,7 +227,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res) {
         const responseData = {
             orderId: newOrder._id,
             customer: username,
-            productName: product.name,
+            productName: product.productName,
             quantity: quantity,
             totalPrice: totalPrice,
             orderStatus: newOrder.status,
@@ -252,7 +252,7 @@ router.post('/:id/orders', [tokenMiddleware], async function (req, res) {
 router.put('/:id', [tokenMiddleware], async function (req, res) {
     try {
         const { id } = req.params
-        const { name, price, description, image, stock } = req.body
+        const { productName, price, description, image, stock } = req.body
 
         const product = await ProductSchema.findByIdAndUpdate(id, req.body, {
             new: true,

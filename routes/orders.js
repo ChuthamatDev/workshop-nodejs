@@ -1,30 +1,34 @@
-const express = require('express');
-const router = express.Router();
+const express = require('express')
+const router = express.Router()
 
 const tokenMiddleware = require('../middleware/token.middleware')
-const OrderSchema = require('../models/orders.models');
-
+const OrderSchema = require('../models/orders.models')
 
 //แสดง Order ทุกรายการ
 router.get('/', [tokenMiddleware], async function (req, res, next) {
     try {
-        const { userId } = req.user;
-        const orders = await OrderSchema.find({ user: userId })
-            .populate('products.product', 'name price');
+        const { userId } = req.user
+        const orders = await OrderSchema.find({ user: userId }).populate(
+            'products.product',
+            'productName price'
+        )
 
-        let totalAmount = 0;
-        let totalQuantity = 0;
+        let totalAmount = 0
+        let totalQuantity = 0
 
-        const formattedOrders = orders.map(order => {
+        const formattedOrders = orders.map((order) => {
             //ส่วนดึงข้อมูล
-            const mainItem = order.products[0];
-            const quantity = mainItem ? mainItem.quantity : 0;
-            const productName = mainItem?.product?.name || 'Unknown Product';
-            const unitPrice = mainItem ? mainItem.price : 0;
+            const mainItem = order.products[0]
+            const quantity = mainItem ? mainItem.quantity : 0
+
+            const productName =
+                mainItem?.product?.productName || 'Unknown Product'
+
+            const unitPrice = mainItem ? mainItem.price : 0
 
             //คำนวณยอดรวม
-            totalAmount += order.total_price;
-            totalQuantity += quantity;
+            totalAmount += order.total_price
+            totalQuantity += quantity
 
             //จัดรูปแบบส่งกลับ
             return {
@@ -35,9 +39,9 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
                 totalPrice: order.total_price,
                 paymentStatus: order.payment_status,
                 orderStatus: order.status,
-                orderDate: order.createdAt
-            };
-        });
+                orderDate: order.createdAt,
+            }
+        })
 
         res.status(200).json({
             status: '200',
@@ -46,20 +50,19 @@ router.get('/', [tokenMiddleware], async function (req, res, next) {
                 summary: {
                     totalOrders: orders.length,
                     totalAmount: totalAmount,
-                    totalQuantity: totalQuantity
+                    totalQuantity: totalQuantity,
                 },
-                orders: formattedOrders
-            }
+                orders: formattedOrders,
+            },
         })
-
     } catch (error) {
-        console.log(error);
+        console.log(error)
         res.status(500).json({
             status: '500',
             message: error.message,
-            data: null
+            data: null,
         })
     }
 })
 
-module.exports = router;
+module.exports = router
